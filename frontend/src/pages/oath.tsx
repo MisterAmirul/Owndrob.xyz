@@ -105,6 +105,7 @@ export default function OathSignup() {
         method: "POST",
         headers: { "Content-Type": "application/json"},
         body: JSON.stringify({ unique_nickname: signInNickname, pin: signInPin }),
+        credentials: 'include', // <-- important to include cookies
       });
       const result = await res.json();
       if (result.success) {
@@ -113,7 +114,7 @@ export default function OathSignup() {
         const userRes = await fetch(`http://localhost:3001/api/oath-user?nickname=${signInNickname}`);
         const userData = await userRes.json();
         login(userData);
-        setTimeout(() => navigate('/craft'), 1500); // redirect after 1.5 seconds
+        setTimeout(() => navigate('/dashboard'), 1500); // redirect after 1.5 seconds
       } else {
         setSignInMessage(`${result.error || "sign in failed"}`);
       }    
@@ -126,7 +127,8 @@ export default function OathSignup() {
 
   return (
     <main style={{ maxWidth: 400, margin: "2rem auto", padding: "1rem", fontFamily: "Arial, sans-serif" }}>
-      <h1>Ed25519 Identity Signup</h1>
+      <h1>OWNDROB</h1>
+      <h3>Sign Up</h3>
       <label>
         Unique Nickname:
         <input

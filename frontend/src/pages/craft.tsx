@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
+import { useUser } from '../UserContext';
 
 const initialState = {
   ipor_name: '',
@@ -18,6 +19,7 @@ export default function Craft() {
   const [result, setResult] = useState('');
   const [copied, setCopied] = useState(false);
   const [cid, setCid] = useState('');
+  const user = useUser();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -29,7 +31,9 @@ export default function Craft() {
       ...form,
       supplies: parseInt(form.supplies),
       value: parseFloat(form.value),
+      crafter: user.user?.public_key || '', //< add crafter public key
     };
+
     const res = await fetch('http://localhost:3001/api/ipor-file', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -58,7 +62,7 @@ export default function Craft() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <input name="ipor_name" placeholder="Group name" value={form.ipor_name} onChange={handleChange} required />
+      <input name="ipor_name" placeholder="Ipor name" value={form.ipor_name} onChange={handleChange} required />
       <input name="version" placeholder="Version" value={form.version} onChange={handleChange} required />
       <input name="description" placeholder="Description" value={form.description} onChange={handleChange} required />
       <input name="supplies" placeholder="Supplies" value={form.supplies} onChange={handleChange} required />

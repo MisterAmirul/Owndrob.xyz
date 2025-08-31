@@ -1,6 +1,6 @@
-import { PinataSDK } from 'pinata';
 import dotenv from 'dotenv';
-
+import axios from 'axios';
+import { PinataSDK } from "pinata";
 
 dotenv.config();
 
@@ -8,7 +8,6 @@ const pinata = new PinataSDK({
   pinataJwt: process.env.PINATA_JWT!,
   pinataGateway: process.env.GATEWAY_URL!
 });
-
 
 
 export interface Metadata {
@@ -25,45 +24,54 @@ export interface Metadata {
 
 // 1. Upload a file and its metadata to Pinata (file level)
 export async function uploadIPORFile(metadata: Metadata) {
-  // Upload metadata as a JSON file to Pinata
   const metadataUpload = await pinata.upload.public.json(metadata);
   const metadataCID = metadataUpload.cid;
   const metadataFileId = metadataUpload.id;
-
   return { metadataCID, metadataFileId };
 }
 
-// 2. rename a file use file id (keyvalue)
-export async function updateIPORFile(metadata: Metadata, fileId: string) {
-  const update = await pinata.files.public.update({
-    name: metadata.ipor_name,
-    id: fileId,
-    keyvalues: {
-      [metadata.label]: String(metadata.value)
-    }
-  });
-  console.log('Pinata update result:', update);
-  return update;
-}
 
-
-// 3. Create a group and add files to it (group level)
-export async function createOwningGroup(groupName: string, fileIds: string[]) {
-  // Create the group
+// 2. Create a group only (after each IPOR creation)
+export async function createOwningGroup(groupName: string) {
   const group = await pinata.groups.public.create({ name: groupName });
-
-  // Add files to the group
-  await pinata.groups.public.addFiles({
-    groupId: group.id,
-    files: fileIds
-  });
-
   return {
-    group: {
-      id: group.id,
-      name: group.name,
-      created_at: group.createdAt
-    },
-    files: fileIds
+    group_id: group.id,
+    name: group.name,
+    created_at: group.createdAt
   };
 }
+
+
+// 3. Upload Ownership Record to Pinata (file level)
+export async function uploadOwnershipRecord(ownershipRecord: {
+  metadata_cid: string,
+  metadata_file_id: string,
+  owner_public_key: string,
+  signature_key: string,
+  timestamp: string
+}) {
+  const ownershipUpload = await pinata.upload.public.json(ownershipRecord);
+  return {
+    ownership_cid: ownershipUpload.cid,
+    ownership_file_id: ownershipUpload.id
+  };
+}
+
+
+// Add a ownership file to a group (used for both IPOR and ownership records)
+export async function addOwnershipFileToGroup(groupId: string, ownership_file_id: string) {
+  const addResult = await pinata.groups.public.addFiles({
+    groupId,
+    files: [ownership_file_id]
+  });
+  return addResult; // array of { id, status }
+}
+
+// Crafter query: get all files in a group
+export async function getFilesInGroup(groupId: string) {
+  const files = await pinata.files.public.list().group(groupId);
+  return files.files;
+}
+
+
+
